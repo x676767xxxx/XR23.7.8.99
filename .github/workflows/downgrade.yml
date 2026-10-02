@@ -1,0 +1,53 @@
+name: Downgrade Spine 4.x to 3.8.96
+
+on:
+  workflow_dispatch:
+
+jobs:
+  downgrade:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Clone Spine converter
+        run: |
+          git clone https://github.com/wang606/SpineSkeletonDataConverter.git converter
+
+      - name: Build converter
+        run: |
+          cd converter
+          mkdir build
+          cd build
+          cmake ..
+          cmake --build . --config Release
+
+      - name: Create output directory
+        run: |
+          mkdir -p output
+
+      - name: Convert to Spine 3.8.96
+        run: |
+          for file in input/*.skel; do
+            [ -e "$file" ] || continue
+
+            name=$(basename "$file" .skel)
+
+            ./converter/build/SpineSkeletonDataConverter \
+              "$file" \
+              "output/${name}_3.8.96.skel" \
+              -v 3.8.96
+          done
+
+      - name: Upload converted files
+        uses: actions/upload-artifact@v4
+        with:
+          name: Spine-3.8.96
+          path: output/
